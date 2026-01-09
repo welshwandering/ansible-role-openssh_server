@@ -13,6 +13,7 @@ exclude_paths:
   - tests/output/
   - '*.md'
   - .tox/
+  - molecule/default/molecule.yml
 
 # Enable specific security-focused rules
 enable_list:
