@@ -68,6 +68,9 @@ jobs:
           - distro: rocky9
             image: geerlingguy/docker-rockylinux9-ansible:latest
             openssh_version: "8.7p1"
+          - distro: rocky8
+            image: geerlingguy/docker-rockylinux8-ansible:latest
+            openssh_version: "8.0p1"
 
     steps:
       - name: Checkout code

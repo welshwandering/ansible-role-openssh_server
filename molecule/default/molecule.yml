@@ -35,8 +35,8 @@ platforms:
     tmpfs:
       - /run
       - /tmp
-  - name: fedora43
-    image: geerlingguy/docker-fedora43-ansible:latest
+  - name: rocky8
+    image: geerlingguy/docker-rockylinux8-ansible:latest
     pre_build_image: true
     privileged: true
     command: "/usr/sbin/init"
@@ -69,6 +69,8 @@ provisioner:
         openssh_expected_version: "${MOLECULE_OPENSSH_VERSION:-9.2p1}"
       rocky9:
         openssh_expected_version: "8.7p1"
+      rocky8:
+        openssh_expected_version: "8.0p1"
       rocky10:
         openssh_expected_version: "9.9"
       fedora43:
