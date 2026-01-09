@@ -1,0 +1,15 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check for Rocky Linux 8
+      ansible.builtin.raw: grep -q "Rocky Linux 8" /etc/os-release
+      register: is_rocky8
+      changed_when: false
+      failed_when: false
+
+    - name: Install Python 3.9 (Rocky 8)
+      ansible.builtin.raw: dnf install -y python39
+      when: is_rocky8.rc == 0
+      changed_when: true
