@@ -109,4 +109,3 @@ jobs:
           MOLECULE_IMAGE: ${{ matrix.image }}
           MOLECULE_OPENSSH_VERSION: ${{ matrix.openssh_version }}
           MOLECULE_COMMAND: ${{ matrix.command }}
-```
