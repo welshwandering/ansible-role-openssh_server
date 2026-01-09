@@ -6,10 +6,7 @@
 [![Rocky Linux](https://img.shields.io/badge/Rocky_Linux-8%20to%2010-10B981?style=for-the-badge&logo=rocky-linux&logoColor=white)](docs/DISTRIBUTIONS.md)
 [![Fedora](https://img.shields.io/badge/Fedora-43-51A2DA?style=for-the-badge&logo=fedora&logoColor=white)](docs/DISTRIBUTIONS.md)
 ![Ansible](https://img.shields.io/badge/Ansible-EE0000?style=for-the-badge&logo=ansible&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
-[![Security](https://img.shields.io/badge/security-policy-blue.svg)](docs/SECURITY.md)
-[![Debian](https://img.shields.io/badge/debian-9%20to%2013-red.svg)](docs/DISTRIBUTIONS.md)
-[![Ubuntu](https://img.shields.io/badge/ubuntu-16.04%20to%2025.10-orange.svg)](docs/DISTRIBUTIONS.md)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 Comprehensive OpenSSH server hardening for Debian and Ubuntu systems with support for 16 compliance frameworks, extensive CVE tracking, and version-aware capability detection.
 
