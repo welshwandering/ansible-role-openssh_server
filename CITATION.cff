@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this Ansible role, please cite it as below."
+title: "Ansible Role: OpenSSH Server"
+type: software
+authors:
+  - family-names: Howells
+    given-names: Alex
+    alias: agh
+license: MIT
+repository-code: "https://github.com/welshwandering/ansible-role-openssh_server"
+url: "https://github.com/welshwandering/ansible-role-openssh_server"
+abstract: >-
+  Comprehensive OpenSSH server hardening for Debian and Ubuntu systems
+  with support for 16 compliance frameworks, extensive CVE tracking,
+  and version-aware capability detection. Provides robust security
+  hardening with modern cryptography including post-quantum support.
+keywords:
+  - ansible
+  - openssh
+  - security
+  - hardening
+  - compliance
+  - pci-dss
+  - hipaa
+  - fedramp
+  - ssh
+  - debian
+  - ubuntu
+  - infrastructure-as-code
+version: 1.0.0
+date-released: "2025-10-05"

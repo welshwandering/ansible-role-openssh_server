@@ -1,0 +1,245 @@
+---
+# Copyright (c) 2025 Gravitino LLC
+# MIT License
+
+- name: Detect distribution type
+  ansible.builtin.set_fact:
+    is_ubuntu: "{{ ansible_distribution == 'Ubuntu' }}"
+    is_debian: "{{ ansible_distribution == 'Debian' }}"
+    is_rocky: "{{ ansible_distribution == 'Rocky' }}"
+    is_redhat: "{{ ansible_os_family == 'RedHat' }}"
+    ubuntu_version: "{{ ansible_distribution_version if ansible_distribution == 'Ubuntu' else '' }}"
+    debian_version: "{{ ansible_distribution_major_version if ansible_distribution == 'Debian' else '' }}"
+  tags:
+    - openssh
+    - facts
+
+- name: Display Ubuntu ESM notice for older LTS versions
+  ansible.builtin.debug:
+    msg:
+      - "WARNING: Ubuntu {{ ubuntu_version }} is in Extended Security Maintenance (ESM)."
+      - "Consider upgrading to a newer LTS or enabling Ubuntu Pro for continued security updates."
+      - "ESM support for {{ ubuntu_version }} ends in {{ '2026' if ubuntu_version == '16.04' else '2028' }}."
+  when:
+    - is_ubuntu
+    - ubuntu_version in ['16.04', '18.04']
+  tags:
+    - openssh
+    - security
+
+- name: Display Ubuntu non-LTS short lifecycle notice
+  ansible.builtin.debug:
+    msg:
+      - "INFO: Ubuntu {{ ubuntu_version }} is a non-LTS release with a 9-month support window."
+      - "This release will reach end-of-life and stop receiving security updates."
+      - "For production use, we recommend upgrading to the latest Ubuntu LTS release."
+  when:
+    - is_ubuntu
+    - ubuntu_version in ['24.10', '25.04', '25.10']
+  tags:
+    - openssh
+    - security
+
+- name: Display Debian EOL warning for old-old-stable
+  ansible.builtin.debug:
+    msg:
+      - "WARNING: Debian {{ debian_version }} ({{ ansible_distribution_release }}) may be past EOL or in LTS."
+      - "OpenSSH {{ openssh_version | default('unknown') }} has limited modern security features."
+      - "Consider upgrading to Debian Bullseye (11) or newer for better security."
+  when:
+    - is_debian
+    - debian_version | int < 11
+  tags:
+    - openssh
+    - security
+
+- name: Install OpenSSH server (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name: openssh-server
+    state: "{{ openssh_server_state }}"
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+  when: is_debian or is_ubuntu
+  tags:
+    - openssh
+    - packages
+
+- name: Install OpenSSH server (RedHat/Rocky)
+  ansible.builtin.dnf:
+    name: openssh-server
+    state: "{{ openssh_server_state }}"
+    update_cache: true
+  become: true
+  when: is_redhat
+  tags:
+    - openssh
+    - packages
+
+- name: Generate SSH host keys (RedHat/Rocky/Fedora)
+  ansible.builtin.command: ssh-keygen -A
+  when: is_redhat
+  changed_when: false
+  become: true
+  tags:
+    - openssh
+    - init
+
+- name: Detect OpenSSH version
+  ansible.builtin.command: ssh -V
+  register: openssh_version_output
+  changed_when: false
+  failed_when: false
+  tags:
+    - openssh
+    - facts
+
+- name: Parse OpenSSH version number
+  ansible.builtin.set_fact:
+    openssh_version_string: "{{ openssh_version_output.stderr | regex_search('OpenSSH_([0-9]+\\.[0-9]+)', '\\1') | first }}"
+  when: openssh_version_output.rc == 0
+  tags:
+    - openssh
+    - facts
+
+- name: Set OpenSSH version as float for comparison
+  ansible.builtin.set_fact:
+    openssh_version: "{{ openssh_version_string | float }}"
+  when: openssh_version_string is defined
+  tags:
+    - openssh
+    - facts
+
+- name: Set OpenSSH capability flags
+  ansible.builtin.set_fact:
+    # Core capabilities for backwards compatibility
+    openssh_has_disable_forwarding: "{{ openssh_version is defined and openssh_version >= 7.4 }}"
+    openssh_has_ca_signature_algorithms: "{{ openssh_version is defined and openssh_version >= 7.9 }}"
+    openssh_has_fido2: "{{ openssh_version is defined and openssh_version >= 8.2 }}"
+    openssh_has_include: "{{ openssh_version is defined and openssh_version >= 8.2 }}"
+    openssh_has_log_verbose: "{{ openssh_version is defined and openssh_version >= 8.5 }}"
+    openssh_has_required_rsa_size: "{{ openssh_version is defined and openssh_version >= 9.3 }}"
+    openssh_has_persourcepenalties: "{{ openssh_version is defined and openssh_version >= 9.8 }}"
+    openssh_has_mlkem: "{{ openssh_version is defined and openssh_version >= 9.9 }}"
+    # Algorithm support flags
+    openssh_has_rsa_sha2: "{{ openssh_version is defined and openssh_version >= 7.2 }}"
+    openssh_has_modern_kex: "{{ openssh_version is defined and openssh_version >= 7.4 }}"
+    # Security restriction flags
+    openssh_blocks_dsa_ca: "{{ openssh_version is defined and openssh_version >= 7.9 }}"
+    openssh_removes_dsa: "{{ openssh_version is defined and openssh_version >= 9.6 }}"
+    openssh_dh_disabled_default: "{{ openssh_version is defined and openssh_version >= 10.0 }}"
+  tags:
+    - openssh
+    - facts
+
+- name: Display OpenSSH version and capabilities
+  ansible.builtin.debug:
+    msg:
+      - "OpenSSH version: {{ openssh_version | default('unknown') }}"
+      - "Distribution: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+      - "Core capabilities:"
+      - "  - DisableForwarding: {{ openssh_has_disable_forwarding | default(false) }}"
+      - "  - CASignatureAlgorithms: {{ openssh_has_ca_signature_algorithms | default(false) }}"
+      - "  - FIDO2 support: {{ openssh_has_fido2 | default(false) }}"
+      - "  - Include directive: {{ openssh_has_include | default(false) }}"
+      - "Advanced capabilities:"
+      - "  - LogVerbose: {{ openssh_has_log_verbose | default(false) }}"
+      - "  - RequiredRSASize: {{ openssh_has_required_rsa_size | default(false) }}"
+      - "  - PerSourcePenalties: {{ openssh_has_persourcepenalties | default(false) }}"
+      - "  - ML-KEM (Post-Quantum): {{ openssh_has_mlkem | default(false) }}"
+  when: openssh_version is defined
+  tags:
+    - openssh
+    - facts
+
+- name: Verify moduli file has strong DH groups (3072-bit minimum)
+  ansible.builtin.shell: |
+    set -o pipefail
+    awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.tmp
+    if [ -s /etc/ssh/moduli.tmp ]; then
+      mv /etc/ssh/moduli.tmp /etc/ssh/moduli
+    else
+      rm -f /etc/ssh/moduli.tmp
+    fi
+  args:
+    executable: /bin/bash
+  become: true
+  when: openssh_verify_moduli | default(true)
+  changed_when: false
+  tags:
+    - openssh
+    - security
+    - hardening
+
+- name: Validate host key strengths
+  ansible.builtin.shell: |
+    set -o pipefail
+    for key in {{ openssh_host_keys | join(' ') }}; do
+      if [ -f "${key}" ]; then
+        if [[ "${key}" == *rsa* ]]; then
+          bits=$(ssh-keygen -lf "${key}" | awk '{print $1}')
+          if [ "${bits}" -lt 3072 ]; then
+            echo "WARNING: ${key} is only ${bits} bits (minimum 3072 recommended)"
+          fi
+        fi
+      fi
+    done
+  args:
+    executable: /bin/bash
+  become: true
+  register: hostkey_validation
+  changed_when: false
+  failed_when: false
+  tags:
+    - openssh
+    - security
+    - validation
+
+- name: Display host key validation results
+  ansible.builtin.debug:
+    msg: "{{ hostkey_validation.stdout_lines }}"
+  when:
+    - hostkey_validation.stdout_lines is defined
+    - hostkey_validation.stdout_lines | length > 0
+  tags:
+    - openssh
+    - security
+
+- name: Configure OpenSSH server
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/sbin/sshd -t -f %s
+    backup: true
+  become: true
+  notify: restart openssh
+  tags:
+    - openssh
+    - configuration
+
+- name: Ensure SSH directory exists for root
+  ansible.builtin.file:
+    path: /root/.ssh
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  become: true
+  when: openssh_permit_root_login != "no"
+  tags:
+    - openssh
+    - security
+
+- name: Enable and start OpenSSH service
+  ansible.builtin.systemd:
+    name: "{{ 'sshd' if is_redhat else 'ssh' }}"
+    enabled: "{{ openssh_service_enabled }}"
+    state: "{{ openssh_service_state }}"
+    daemon_reload: true
+  become: true
+  tags:
+    - openssh
+    - service

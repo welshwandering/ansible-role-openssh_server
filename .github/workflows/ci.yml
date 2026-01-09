@@ -1,0 +1,120 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  lint:
+    name: Lint (YAML & Ansible)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible-core>=2.15
+          pip install ansible-lint>=6.22
+          pip install yamllint>=1.33
+
+      - name: Install Ansible collections
+        run: |
+          ansible-galaxy collection install ansible.posix>=1.5.0
+          ansible-galaxy collection install community.general>=8.0.0
+
+      - name: Run yamllint
+        run: yamllint .
+
+      - name: Run ansible-lint (production profile)
+        run: ansible-lint --profile=production
+
+  molecule:
+    name: Molecule Test (${{ matrix.distro }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Debian - All supported versions
+          - distro: debian9
+            image: debian:stretch
+            openssh_version: "7.4p1"
+          - distro: debian10
+            image: debian:buster
+            openssh_version: "7.9p1"
+          - distro: debian11
+            image: debian:bullseye
+            openssh_version: "8.4p1"
+          - distro: debian12
+            image: debian:bookworm
+            openssh_version: "9.2p1"
+          - distro: debian13
+            image: debian:trixie
+            openssh_version: "10.0p1"
+          - distro: debian-testing
+            image: debian:sid
+            openssh_version: "10.0p1"
+
+          # Ubuntu LTS - All supported versions
+          - distro: ubuntu1604
+            image: ubuntu:xenial
+            openssh_version: "7.2p2"
+          - distro: ubuntu1804
+            image: ubuntu:bionic
+            openssh_version: "7.6p1"
+          - distro: ubuntu2004
+            image: ubuntu:focal
+            openssh_version: "8.2p1"
+          - distro: ubuntu2204
+            image: ubuntu:jammy
+            openssh_version: "8.9p1"
+          - distro: ubuntu2404
+            image: ubuntu:noble
+            openssh_version: "9.6p1"
+
+          # Ubuntu Non-LTS - Current releases only
+          - distro: ubuntu2410
+            image: ubuntu:oracular
+            openssh_version: "9.7p1"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install molecule molecule-plugins[docker] ansible-core>=2.15
+
+      - name: Install Ansible collections
+        run: |
+          ansible-galaxy collection install ansible.posix>=1.5.0
+          ansible-galaxy collection install community.general>=8.0.0
+
+      - name: Run Molecule tests
+        run: molecule test
+        env:
+          MOLECULE_DISTRO: ${{ matrix.distro }}
+          MOLECULE_IMAGE: ${{ matrix.image }}
+          MOLECULE_OPENSSH_VERSION: ${{ matrix.openssh_version }}

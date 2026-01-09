@@ -1,0 +1,158 @@
+# OpenSSH Server Configuration
+# Managed by Ansible
+# DO NOT EDIT MANUALLY
+
+# Network
+Port {{ openssh_port }}
+{% for address in openssh_listen_addresses %}
+ListenAddress {{ address }}
+{% endfor %}
+
+# Protocol (deprecated directive in newer OpenSSH, kept for compatibility)
+{% if openssh_version is defined and openssh_version < 7.4 %}
+Protocol {{ openssh_protocol }}
+{% endif %}
+
+# Host Keys
+{% for key in openssh_host_keys %}
+HostKey {{ key }}
+{% endfor %}
+
+# Cryptography (Mozilla Modern Profile + Version-Specific Enhancements)
+Ciphers {{ openssh_ciphers | join(',') }}
+{% if openssh_has_mlkem | default(false) and openssh_enable_mlkem %}
+# ML-KEM Post-Quantum KEX (OpenSSH 9.9+)
+KexAlgorithms mlkem768x25519-sha256,{{ openssh_kex_algorithms | join(',') }}
+{% else %}
+KexAlgorithms {{ openssh_kex_algorithms | join(',') }}
+{% endif %}
+MACs {{ openssh_macs | join(',') }}
+
+# Key Types and Algorithms
+{% if openssh_enable_security_keys %}
+PubkeyAcceptedKeyTypes {{ openssh_pubkey_accepted_key_types | join(',') }}
+{% endif %}
+{% if openssh_host_key_algorithms | length > 0 %}
+HostKeyAlgorithms {{ openssh_host_key_algorithms | join(',') }}
+{% endif %}
+{% if openssh_enable_ca and openssh_ca_signature_algorithms | length > 0 and openssh_has_ca_signature_algorithms | default(false) %}
+CASignatureAlgorithms {{ openssh_ca_signature_algorithms | join(',') }}
+{% endif %}
+
+# RSA Key Size Requirements (OpenSSH 9.3+, NSA/CISA Compliance)
+{% if openssh_has_required_rsa_size | default(false) %}
+RequiredRSASize {{ openssh_required_rsa_size }}
+{% endif %}
+
+# Authentication
+PermitRootLogin {{ openssh_permit_root_login }}
+PubkeyAuthentication {{ 'yes' if openssh_pubkey_authentication else 'no' }}
+PasswordAuthentication {{ 'yes' if openssh_password_authentication else 'no' }}
+PermitEmptyPasswords {{ 'yes' if openssh_permit_empty_passwords else 'no' }}
+ChallengeResponseAuthentication {{ 'yes' if openssh_challenge_response_auth else 'no' }}
+
+# Login Settings
+LoginGraceTime {{ openssh_login_grace_time }}
+MaxAuthTries {{ openssh_max_auth_tries }}
+MaxSessions {{ openssh_max_sessions }}
+MaxStartups {{ openssh_max_startups }}
+
+# Logging
+SyslogFacility {{ openssh_syslog_facility }}
+LogLevel {{ openssh_log_level }}
+{% if openssh_has_log_verbose | default(false) and openssh_enable_verbose_logging %}
+# Enhanced Forensic Logging (OpenSSH 8.5+)
+LogVerbose {{ openssh_log_verbose_subsystems | join(',') }}
+{% endif %}
+
+# PAM and system integration
+UsePAM {{ 'yes' if openssh_use_pam else 'no' }}
+UseDNS {{ 'yes' if openssh_use_dns else 'no' }}
+
+# Session Re-keying (CCCS ITSP.40.062 Requirement)
+RekeyLimit {{ openssh_rekey_limit }}
+
+# Forwarding and features
+X11Forwarding {{ 'yes' if openssh_x11_forwarding else 'no' }}
+PrintMotd {{ 'yes' if openssh_print_motd else 'no' }}
+PrintLastLog {{ 'yes' if openssh_print_last_log else 'no' }}
+TCPKeepAlive {{ 'yes' if openssh_tcp_keep_alive else 'no' }}
+
+# Client alive (keepalive)
+ClientAliveInterval {{ openssh_client_alive_interval }}
+ClientAliveCountMax {{ openssh_client_alive_count_max }}
+
+# Access control
+{% if openssh_allow_users | length > 0 %}
+AllowUsers {{ openssh_allow_users | join(' ') }}
+{% endif %}
+{% if openssh_deny_users | length > 0 %}
+DenyUsers {{ openssh_deny_users | join(' ') }}
+{% endif %}
+{% if openssh_allow_groups | length > 0 %}
+AllowGroups {{ openssh_allow_groups | join(' ') }}
+{% endif %}
+{% if openssh_deny_groups | length > 0 %}
+DenyGroups {{ openssh_deny_groups | join(' ') }}
+{% endif %}
+
+# Banner
+{% if openssh_banner != 'none' %}
+Banner {{ openssh_banner }}
+{% endif %}
+
+# Subsystems
+{% for subsystem in openssh_subsystems %}
+Subsystem {{ subsystem.name }} {{ subsystem.command }}
+{% endfor %}
+
+# Security hardening
+StrictModes yes
+HostbasedAuthentication no
+IgnoreRhosts yes
+PermitUserEnvironment no
+AcceptEnv LANG LC_*
+
+# Certificate Authority Configuration
+{% if openssh_enable_ca %}
+{% if openssh_trusted_user_ca_keys | length > 0 %}
+{% for ca_key in openssh_trusted_user_ca_keys %}
+TrustedUserCAKeys {{ ca_key }}
+{% endfor %}
+{% endif %}
+{% if openssh_host_certificate %}
+HostCertificate {{ openssh_host_certificate }}
+{% endif %}
+{% endif %}
+
+# Additional Hardening Options
+{% if openssh_disable_forwarding_comprehensive and openssh_has_disable_forwarding | default(false) %}
+# Comprehensive forwarding disable (OpenSSH 7.4+, fixed in 10.0)
+DisableForwarding yes
+{% else %}
+{% if openssh_disable_forwarding or openssh_disable_tcp_forwarding %}
+AllowTcpForwarding no
+{% else %}
+AllowTcpForwarding yes
+{% endif %}
+{% if openssh_disable_forwarding or openssh_disable_agent_forwarding %}
+AllowAgentForwarding no
+{% else %}
+AllowAgentForwarding yes
+{% endif %}
+{% if openssh_disable_forwarding or openssh_disable_stream_local_forwarding %}
+AllowStreamLocalForwarding no
+{% endif %}
+{% if openssh_disable_tunneling %}
+PermitTunnel no
+{% endif %}
+{% endif %}
+GatewayPorts no
+
+# PerSourcePenalties - Automated Rate Limiting and Attack Mitigation (OpenSSH 9.8+)
+{% if openssh_has_persourcepenalties | default(false) and openssh_enable_persourcepenalties %}
+# Automatic penalties for repeated failures and suspicious behavior
+PerSourcePenalties authfail:{{ openssh_persource_authfail_penalty }} noauth:{{ openssh_persource_noauth_penalty }} crash:{{ openssh_persource_crash_penalty }}
+PerSourceMaxStartups {{ openssh_persource_maxstartups }}
+PerSourceNetBlockSize {{ openssh_persource_netblock_ipv4 }}:{{ openssh_persource_netblock_ipv6 }}
+{% endif %}

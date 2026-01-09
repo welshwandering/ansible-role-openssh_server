@@ -1,0 +1,30 @@
+---
+#
+# Basic SSH Hardening
+#
+# This playbook applies basic SSH hardening suitable for most environments.
+# - Disables password authentication (key-based only)
+# - Restricts root login to key-based auth
+# - Enables modern cryptography
+# - Sets reasonable login limits
+#
+
+- name: Basic SSH hardening
+  hosts: all
+  become: true
+
+  roles:
+    - role: welshwandering.openssh_server
+      vars:
+        # Disable password authentication (key-based only)
+        openssh_password_authentication: false
+
+        # Allow root login with keys only (no passwords)
+        openssh_permit_root_login: 'no'
+
+        # Login attempt limits
+        openssh_max_auth_tries: 3
+        openssh_login_grace_time: "30s"
+
+        # Enable verbose logging for security monitoring
+        openssh_log_level: "VERBOSE"

@@ -1,0 +1,26 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+
+  pre_tasks:
+    - name: Update apt cache (Debian/Ubuntu)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == 'Debian'
+
+    - name: Install OpenSSH server
+      ansible.builtin.apt:
+        name: openssh-server
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Create privilege separation directory
+      ansible.builtin.file:
+        path: /run/sshd
+        state: directory
+        mode: '0755'
+
+  roles:
+    - role: ansible-role-openssh_server

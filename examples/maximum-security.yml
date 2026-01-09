@@ -1,0 +1,80 @@
+---
+#
+# Maximum Security SSH Configuration
+#
+# Implements the highest security posture suitable for:
+# - Critical infrastructure
+# - High-value targets
+# - Defense against sophisticated attacks
+#
+# Features:
+# - All password authentication disabled
+# - Root login completely disabled
+# - All forwarding disabled
+# - Per-source rate limiting (9.8+)
+# - Aggressive session re-keying
+# - Enhanced forensic logging
+#
+
+- name: Maximum security hardening
+  hosts: high_security_servers
+  become: true
+
+  roles:
+    - role: welshwandering.openssh_server
+      vars:
+        # Authentication hardening
+        openssh_password_authentication: false
+        openssh_permit_root_login: "no"  # Completely disable root SSH
+        openssh_challenge_response_auth: false
+
+        # Rate limiting and attack mitigation (OpenSSH 9.8+)
+        openssh_enable_persourcepenalties: true
+        openssh_persource_authfail_penalty: "10s"  # Aggressive penalty
+        openssh_persource_maxstartups: "5:30:10"   # Very restrictive
+
+        # Disable all forwarding (prevent lateral movement)
+        openssh_disable_forwarding_comprehensive: true
+        openssh_x11_forwarding: false
+
+        # Restrict to strongest cryptography only
+        openssh_ciphers:
+          - chacha20-poly1305@openssh.com
+          - aes256-gcm@openssh.com
+        openssh_kex_algorithms:
+          - curve25519-sha256
+        openssh_macs:
+          - hmac-sha2-512-etm@openssh.com
+
+        # Minimum RSA key size
+        openssh_required_rsa_size: 4096  # Maximum strength (Exceeds NIST/CNSA 3072-bit requirement)
+
+        # Aggressive session limits
+        openssh_max_auth_tries: 2        # (Exceeds PCI DSS 8.3.6 limit of 6)
+        openssh_login_grace_time: "20s"
+        openssh_max_sessions: 5
+
+        # Aggressive session re-keying
+        openssh_rekey_limit: "512M 30m"
+
+        # Client timeout
+        openssh_client_alive_interval: 180  # 3 minutes (Exceeds PCI DSS 8.2.8 / FedRAMP AC-12 15-min requirement)
+        openssh_client_alive_count_max: 1   # Disconnect after 6 minutes idle
+
+        # Enhanced forensic logging
+        openssh_enable_verbose_logging: true
+        openssh_log_level: "VERBOSE"
+        openssh_log_verbose_subsystems:
+          - "kex.c:*"
+          - "key.c:*"
+          - "auth*.c:*"
+          - "packet.c:*"
+
+        # Strict user access control
+        openssh_allow_groups:
+          - security-admins
+        # Explicitly deny risky users
+        openssh_deny_users:
+          - root
+          - admin
+          - test

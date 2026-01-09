@@ -1,0 +1,66 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Check SSH service status
+      ansible.builtin.systemd:
+        name: ssh
+      register: ssh_service
+      failed_when: false
+
+    - name: Display SSH service status
+      ansible.builtin.debug:
+        msg: "SSH service state: {{ ssh_service.status.ActiveState | default('unknown') }}"
+
+    - name: Validate SSH configuration syntax
+      ansible.builtin.command: sshd -t
+      changed_when: false
+      register: sshd_test
+
+    - name: Verify SSH config is valid
+      ansible.builtin.assert:
+        that:
+          - sshd_test.rc == 0
+        fail_msg: "SSH configuration has errors"
+        success_msg: "SSH configuration is valid"
+
+    - name: Get OpenSSH version
+      ansible.builtin.command: ssh -V
+      changed_when: false
+      register: ssh_version_output
+      failed_when: false
+
+    - name: Display OpenSSH version
+      ansible.builtin.debug:
+        msg: "OpenSSH version: {{ ssh_version_output.stderr | default('unknown') }}"
+
+    - name: Check sshd_config exists
+      ansible.builtin.stat:
+        path: /etc/ssh/sshd_config
+      register: sshd_config_file
+
+    - name: Verify sshd_config was created
+      ansible.builtin.assert:
+        that:
+          - sshd_config_file.stat.exists
+        fail_msg: "SSH configuration file not found"
+        success_msg: "SSH configuration file exists"
+
+    - name: Check sshd_config for hardening
+      ansible.builtin.shell: |
+        grep -E '^(PasswordAuthentication|PermitRootLogin|PubkeyAuthentication)' /etc/ssh/sshd_config || true
+      changed_when: false
+      register: ssh_hardening
+
+    - name: Display hardening configuration
+      ansible.builtin.debug:
+        msg: "{{ ssh_hardening.stdout_lines }}"
+
+    - name: Verify key hardening settings
+      ansible.builtin.assert:
+        that:
+          - "'PasswordAuthentication' in ssh_hardening.stdout"
+          - "'PermitRootLogin' in ssh_hardening.stdout"
+        fail_msg: "Expected hardening settings not found"
+        success_msg: "Hardening settings are configured"

@@ -1,0 +1,188 @@
+---
+# Copyright (c) 2025 Gravitino LLC
+# MIT License
+
+# OpenSSH Server Configuration with Security Best Practices
+
+# Supported distributions
+# Debian: Stretch (9) through Forky (testing)
+# Ubuntu LTS: 16.04 (Xenial) through 24.04 (Noble) with ESM support
+# Ubuntu Non-LTS: 24.10 (Oracular), 25.04 (Plucky), 25.10 (Questing) - current only
+# Note: EOL non-LTS releases (16.10-23.10) are NOT supported
+openssh_supported_distributions:
+  - Debian
+  - Ubuntu
+
+# Package state
+openssh_server_state: present
+
+# Service management
+openssh_service_enabled: true
+openssh_service_state: started
+
+# Security settings
+openssh_permit_root_login: "prohibit-password"  # no, prohibit-password, or yes
+openssh_password_authentication: false
+openssh_pubkey_authentication: true
+openssh_permit_empty_passwords: false
+openssh_challenge_response_auth: false
+
+# Network settings
+openssh_port: 22
+openssh_listen_addresses:
+  - "0.0.0.0"
+  - "::"
+
+# Protocol and crypto settings (Mozilla Modern Profile + OpenSSH 10.0 Preferences)
+# Cipher preference order: AEAD (ChaCha20, AES-GCM) over CTR mode
+openssh_protocol: 2
+openssh_ciphers:
+  - chacha20-poly1305@openssh.com  # AEAD - highest priority
+  - aes256-gcm@openssh.com          # AEAD - preferred in OpenSSH 10.0
+  - aes128-gcm@openssh.com          # AEAD
+  - aes256-ctr                      # Fallback - ANSSI/BSI approved
+  - aes192-ctr                      # Fallback
+  - aes128-ctr                      # Fallback
+openssh_kex_algorithms:
+  - curve25519-sha256
+  - curve25519-sha256@libssh.org
+  - ecdh-sha2-nistp521
+  - ecdh-sha2-nistp384
+  - ecdh-sha2-nistp256
+  - diffie-hellman-group-exchange-sha256
+  - diffie-hellman-group16-sha512
+  - diffie-hellman-group18-sha512
+openssh_macs:
+  - hmac-sha2-512-etm@openssh.com
+  - hmac-sha2-256-etm@openssh.com
+  - umac-128-etm@openssh.com
+  - hmac-sha2-512
+  - hmac-sha2-256
+  - umac-128@openssh.com
+
+# Host keys
+openssh_host_keys:
+  - /etc/ssh/ssh_host_ed25519_key
+  - /etc/ssh/ssh_host_rsa_key
+
+# Login settings
+openssh_login_grace_time: "30s"
+openssh_max_auth_tries: 3
+openssh_max_sessions: 10
+openssh_max_startups: "10:30:60"
+
+# Logging
+openssh_log_level: "VERBOSE"  # QUIET, FATAL, ERROR, INFO, VERBOSE, DEBUG
+openssh_syslog_facility: "AUTH"
+
+# Additional security
+openssh_use_pam: true
+openssh_use_dns: false
+openssh_x11_forwarding: false
+openssh_print_motd: false
+openssh_print_last_log: true
+openssh_tcp_keep_alive: true
+openssh_client_alive_interval: 300
+openssh_client_alive_count_max: 2
+
+# Allow/Deny settings (empty by default)
+openssh_allow_users: []
+openssh_deny_users: []
+openssh_allow_groups: []
+openssh_deny_groups: []
+
+# Banner
+openssh_banner: "none"  # Path to banner file or "none"
+
+# Subsystems
+# Path is distribution-aware: Ubuntu uses /usr/lib/openssh/, Debian uses /usr/lib/
+openssh_subsystems:
+  - name: sftp
+    command: >-
+      {%- if ansible_os_family == 'RedHat' -%}
+      /usr/libexec/openssh/sftp-server
+      {%- elif ansible_distribution == 'Ubuntu' -%}
+      /usr/lib/openssh/sftp-server
+      {%- else -%}
+      /usr/lib/sftp-server
+      {%- endif -%}
+
+# ============================================================================
+# Advanced Security Features (Version-Dependent)
+# ============================================================================
+
+# PerSourcePenalties - Automatic rate limiting (OpenSSH 9.8+)
+# Automatically enabled if supported by detected OpenSSH version
+openssh_enable_persourcepenalties: true
+openssh_persource_authfail_penalty: "5s"  # Penalty for auth failures
+openssh_persource_noauth_penalty: "1s"    # Penalty for connections without auth
+openssh_persource_crash_penalty: "90s"     # Penalty for crashes
+openssh_persource_maxstartups: "10:30:60"  # Per-source connection limits
+openssh_persource_netblock_ipv4: 32        # IPv4 netblock size for penalties
+openssh_persource_netblock_ipv6: 128       # IPv6 netblock size for penalties
+
+# ML-KEM Post-Quantum Key Exchange (OpenSSH 9.9+)
+# Automatically prepended to KEX list if supported
+openssh_enable_mlkem: true
+
+# RequiredRSASize - Minimum RSA key size (OpenSSH 9.3+, NSA/CISA compliant)
+openssh_required_rsa_size: 3072
+
+# Enhanced Logging with LogVerbose (OpenSSH 8.5+)
+openssh_enable_verbose_logging: true
+openssh_log_verbose_subsystems:
+  - "kex.c:*"
+  - "key.c:*"
+  - "auth*.c:*"
+
+# FIDO2/Security Key Support (OpenSSH 8.2+)
+# Enable to support hardware security keys like YubiKey
+openssh_enable_security_keys: false  # Conservative default, opt-in
+openssh_pubkey_accepted_key_types:
+  - sk-ssh-ed25519@openssh.com
+  - ssh-ed25519
+  - sk-ecdsa-sha2-nistp256@openssh.com
+  - rsa-sha2-512
+  - rsa-sha2-256
+openssh_host_key_algorithms:
+  - sk-ssh-ed25519-cert-v01@openssh.com
+  - ssh-ed25519-cert-v01@openssh.com
+  - ssh-ed25519
+  - rsa-sha2-512
+  - rsa-sha2-256
+
+# Certificate Authority (CA) Support
+# Enable to use SSH certificates for authentication
+openssh_enable_ca: false
+openssh_trusted_user_ca_keys: []  # List of CA public key file paths
+openssh_host_certificate: ""       # Path to host certificate file
+openssh_ca_signature_algorithms:
+  - sk-ssh-ed25519@openssh.com
+  - ssh-ed25519
+  - rsa-sha2-512
+  - rsa-sha2-256
+
+# Additional Hardening (All versions)
+openssh_disable_forwarding: false        # Set true to disable all forwarding
+openssh_disable_forwarding_comprehensive: false  # Use DisableForwarding directive (7.4+)
+openssh_disable_tcp_forwarding: false    # Disable TCP forwarding
+openssh_disable_x11_forwarding: true     # Already set above, kept for clarity
+openssh_disable_agent_forwarding: false  # Disable SSH agent forwarding
+openssh_disable_tunneling: false         # Disable tunnel device forwarding
+openssh_disable_stream_local_forwarding: false  # Disable Unix domain socket forwarding
+
+# Session Re-keying (CCCS ITSP.40.062 Requirement)
+# Format: data_limit time_limit (e.g., "1G 1h" = 1GB or 1 hour, whichever comes first)
+openssh_rekey_limit: "1G 1h"
+
+# Host Key DNS Verification (CVE-2025-26465 mitigation)
+openssh_verify_host_key_dns: false  # Disabled by default due to security vulnerability
+
+# Security validation and verification
+openssh_verify_moduli: true  # Verify DH moduli are 3072-bit minimum
+openssh_verify_host_keys: true  # Validate host key strengths
+
+# Host key permissions
+openssh_hostkey_permissions: "0600"
+openssh_hostkey_owner: root
+openssh_hostkey_group: root

@@ -1,0 +1,56 @@
+# CODEOWNERS - Define individuals or teams responsible for code in this repository
+# See: https://docs.github.com/articles/about-codeowners/
+#
+# When someone opens a pull request that modifies code owned by a user or team,
+# that user or team will be automatically requested as reviewers.
+#
+# Order matters: Last matching pattern takes precedence.
+# Patterns follow the same syntax as .gitignore files.
+
+# Global fallback - owner of all files unless overridden
+* @agh
+
+# Core Role Files
+/tasks/ @agh
+/defaults/ @agh
+/handlers/ @agh
+/templates/ @agh
+/meta/ @agh
+/vars/ @agh
+
+# Security & Compliance Documentation
+/docs/SECURITY.md @agh
+/docs/CVE-TRACKING.md @agh
+/docs/COMPLIANCE.md @agh
+
+# Community Health Files
+/docs/CONTRIBUTING.md @agh
+/docs/CODE_OF_CONDUCT.md @agh
+/docs/SUPPORT.md @agh
+/docs/AUTHORS.md @agh
+/docs/CONTRIBUTORS.md @agh
+
+# Project Documentation
+/docs/DISTRIBUTIONS.md @agh
+/docs/CONFIGURATION.md @agh
+/docs/EXAMPLES.md @agh
+/docs/TROUBLESHOOTING.md @agh
+/docs/CHANGELOG.md @agh
+/README.md @agh
+
+# GitHub Templates & Workflows
+/.github/ @agh
+/.github/CODEOWNERS @agh
+
+# Configuration Files
+/.yamllint @agh
+/.ansible-lint @agh
+
+# Examples & Tests
+/examples/ @agh
+/tests/ @agh
+
+# Project Metadata
+/CITATION.cff @agh
+/AGENTS.md @agh
+/LICENSE @agh

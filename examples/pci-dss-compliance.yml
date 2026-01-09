@@ -1,0 +1,47 @@
+---
+#
+# PCI DSS 4.0 Compliant SSH Configuration
+#
+# Meets PCI DSS requirements for secure remote access:
+# - Multi-factor authentication support (key + passphrase)
+# - Strong encryption (AES-256, ChaCha20)
+# - Automatic session timeout
+# - Comprehensive audit logging
+# - Session re-keying
+#
+# PCI DSS 4.0 compliance deadline: March 31, 2025
+#
+
+- name: PCI DSS 4.0 compliant SSH
+  hosts: pci_scope
+  become: true
+
+  roles:
+    - role: welshwandering.openssh_server
+      vars:
+        # Requirements 8.4.2 / 8.4.3: Multi-factor authentication
+        openssh_password_authentication: false  # Forces key-based (factor 1)
+        # Users must use passphrase-protected keys (factor 2)
+
+        # Requirement 8.3.6: Account Lockout
+        openssh_max_auth_tries: 3
+        openssh_login_grace_time: "30s"
+
+        # Requirement 10: Comprehensive logging
+        openssh_enable_verbose_logging: true
+        openssh_log_level: "VERBOSE"
+
+        # Requirement 4.2.1: Strong cryptography
+        # (defaults already meet PCI DSS: AES-256, ChaCha20)
+
+        # Requirement 8.2.8: Idle Session Timeout
+        openssh_client_alive_interval: 300  # 5-minute timeout check
+        openssh_client_alive_count_max: 2   # Auto-disconnect after 10 minutes idle
+
+        # Session re-keying for long-running sessions
+        openssh_rekey_limit: "1G 1h"
+
+        # Restrict access to authorized users only
+        openssh_allow_groups:
+          - pci-admins
+          - pci-operators

@@ -1,0 +1,48 @@
+---
+#
+# FedRAMP Moderate & High Baseline SSH Configuration
+#
+# Implements NIST SP 800-53 Rev 5 controls for FedRAMP Moderate and High:
+# - AC-17 (Remote Access)
+# - IA-2 (Identification and Authentication)
+# - SC-8 (Transmission Confidentiality and Integrity)
+# - SC-13 (Cryptographic Protection)
+# - AU-2 (Audit Events)
+# - FIPS 140-2 compatible algorithms
+#
+# Baselines: Moderate (325 controls) and High (421 controls)
+#
+
+- name: FedRAMP Moderate & High baseline SSH
+  hosts: fedramp_systems
+  become: true
+
+  roles:
+    - role: welshwandering.openssh_server
+      vars:
+        # AC-17: Remote Access Control
+        # IA-2: Identification and Authentication (Multi-factor)
+        openssh_password_authentication: false
+        openssh_permit_root_login: "no"
+
+        # SC-13: Cryptographic Protection (FIPS 140-2 compatible)
+        # Defaults use: AES, ChaCha20, Curve25519, DH Group 16+
+        # Note: Full FIPS 140-2 requires OS-level FIPS mode
+
+        # Enhanced RSA key size (NSA/CISA requirement)
+        openssh_required_rsa_size: 3072
+
+        # AU-2: Audit Events - Comprehensive logging
+        openssh_enable_verbose_logging: true
+        openssh_log_level: "VERBOSE"
+
+        # Session controls
+        openssh_max_auth_tries: 3
+        openssh_login_grace_time: "60s"
+
+        # Session re-keying (CCCS ITSP.40.062 also requires this)
+        openssh_rekey_limit: "512M 30m"  # Re-key every 512MB or 30 minutes
+
+        # Client timeout for idle sessions (AC-12)
+        openssh_client_alive_interval: 300
+        openssh_client_alive_count_max: 0  # Disconnect immediately on timeout

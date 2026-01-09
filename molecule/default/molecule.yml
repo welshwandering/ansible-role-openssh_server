@@ -1,0 +1,78 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: docker
+
+platforms:
+  - name: "${MOLECULE_DISTRO:-debian12}"
+    image: "${MOLECULE_IMAGE:-geerlingguy/docker-debian12-ansible:latest}"
+    pre_build_image: true
+    privileged: true
+    command: ""  # Let the image's default command run (systemd)
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    tmpfs:
+      - /run
+      - /tmp
+  - name: rocky10
+    image: geerlingguy/docker-rockylinux10-ansible:latest
+    pre_build_image: true
+    cgroupns_mode: host
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+  - name: rocky9
+    image: geerlingguy/docker-rockylinux9-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: "/usr/sbin/init"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    tmpfs:
+      - /run
+      - /tmp
+  - name: fedora43
+    image: geerlingguy/docker-fedora43-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: "/usr/sbin/init"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    tmpfs:
+      - /run
+      - /tmp
+  - name: fedora43
+    image: geerlingguy/docker-fedora43-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: "/usr/sbin/init"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    tmpfs:
+      - /run
+      - /tmp
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      roles_path: ${MOLECULE_PROJECT_DIRECTORY}/../
+  inventory:
+    host_vars:
+      "${MOLECULE_DISTRO:-debian12}":
+        openssh_expected_version: "${MOLECULE_OPENSSH_VERSION:-9.2p1}"
+      rocky9:
+        openssh_expected_version: "8.7p1"
+      rocky10:
+        openssh_expected_version: "9.9"
+      fedora43:
+        openssh_expected_version: "9.9"
+
+verifier:
+  name: ansible

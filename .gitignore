@@ -1,0 +1,40 @@
+# Ansible
+*.retry
+.ansible/
+ansible.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Testing
+.tox/
+.pytest_cache/
+.cache
+htmlcov/
+.ruff_cache/
+molecule/*/cache/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.orig
+
+# Build artifacts
+*.tar.gz

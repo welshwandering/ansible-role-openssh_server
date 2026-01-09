@@ -1,0 +1,86 @@
+---
+#
+# FIDO2/WebAuthn Hardware Security Keys
+#
+# Enables FIDO2 hardware security key authentication (YubiKey, etc.)
+# Requires OpenSSH 8.2+ on both client and server
+#
+# Hardware security keys provide phishing-resistant authentication
+# and are recommended by:
+# - NIST SP 800-63B (AAL3)
+# - CISA Zero Trust guidance
+# - NSA Cybersecurity Advisory
+#
+
+- name: FIDO2 hardware security keys
+  hosts: admin_workstations
+  become: true
+
+  roles:
+    - role: welshwandering.openssh_server
+      vars:
+        # Enable FIDO2/WebAuthn security key support
+        openssh_enable_security_keys: true
+
+        # Disable password authentication (keys only)
+        openssh_password_authentication: false
+
+        # Accepted key types (prioritize security keys)
+        openssh_pubkey_accepted_key_types:
+          - sk-ssh-ed25519@openssh.com      # FIDO2 Ed25519 (preferred)
+          - sk-ecdsa-sha2-nistp256@openssh.com  # FIDO2 ECDSA
+          - ssh-ed25519                      # Standard Ed25519 (fallback)
+          - rsa-sha2-512                     # RSA (fallback)
+
+        # Host key algorithms
+        openssh_host_key_algorithms:
+          - sk-ssh-ed25519-cert-v01@openssh.com
+          - ssh-ed25519-cert-v01@openssh.com
+          - ssh-ed25519
+          - rsa-sha2-512
+
+        # CA signature algorithms (if using SSH certificates)
+        openssh_ca_signature_algorithms:
+          - sk-ssh-ed25519@openssh.com
+          - ssh-ed25519
+          - rsa-sha2-512
+
+        # Standard security settings
+        openssh_permit_root_login: "prohibit-password"
+        openssh_max_auth_tries: 3
+        openssh_login_grace_time: "30s"
+
+  post_tasks:
+    - name: Display FIDO2 setup instructions
+      ansible.builtin.debug:
+        msg: |
+          FIDO2 Hardware Security Keys Enabled
+
+          Client Setup:
+          1. Generate a security key credential:
+             ssh-keygen -t ed25519-sk -C "user@host"
+
+          2. For keys with PIN protection:
+             ssh-keygen -t ed25519-sk -O verify-required -C "user@host"
+
+          3. For keys requiring user presence (touch):
+             ssh-keygen -t ed25519-sk -O resident -C "user@host"
+
+          4. Copy public key to server:
+             ssh-copy-id -i ~/.ssh/id_ed25519_sk.pub user@{{ inventory_hostname }}
+
+          5. Test connection:
+             ssh user@{{ inventory_hostname }}
+             (You'll need to touch your security key)
+
+          Supported Devices:
+          - YubiKey 5 Series
+          - YubiKey Security Key Series
+          - Feitian ePass FIDO
+          - SoloKeys
+          - Any FIDO2/U2F compatible device
+
+          Requirements:
+          - OpenSSH 8.2+ on both client and server
+          - libfido2 library on client
+          - Physical FIDO2-compatible security key

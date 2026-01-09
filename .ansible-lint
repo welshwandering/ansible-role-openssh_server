@@ -1,0 +1,69 @@
+---
+# Ansible-lint configuration
+# Uses production profile for highest quality standards
+
+# Profile selection (production is strictest)
+profile: production
+
+# Exclude paths
+exclude_paths:
+  - .cache/
+  - .github/
+  - collections/
+  - tests/output/
+  - '*.md'
+  - .tox/
+
+# Enable specific security-focused rules
+enable_list:
+  - no-log-password          # Require no_log for password fields
+  - risky-file-permissions   # Catch overly permissive file modes
+  - command-instead-of-shell # Prefer command over shell module
+  - name[casing]             # Enforce consistent task naming
+  - yaml[line-length]        # Max line length
+  - fqcn                     # Require Fully Qualified Collection Names
+  - jinja[spacing]           # Consistent Jinja2 formatting
+
+# Skip list for rules we explicitly don't need
+skip_list:
+  - role-name[path]          # We use namespace in paths (generic/lshw)
+  - galaxy[no-changelog]     # We don't use Galaxy
+
+# Strict mode - warnings become errors
+strict: true
+
+# Warn about potential issues
+warn_list:
+  - experimental             # Warn about experimental features
+  - no-changed-when          # Tasks should have changed_when
+  - no-handler               # Warn if notify without handler
+
+# Task naming requirements
+task_name_prefix: "{stem} | "  # Optional prefix for better organization
+
+# Offline mode for CI/CD
+offline: false
+
+# Mock modules that may not be available during linting
+mock_modules:
+  - docker_container
+  - docker_compose
+  - community.general.docker_compose
+
+# Mock roles for testing
+mock_roles:
+  - community.general
+
+# Kinds of files to lint
+kinds:
+  - yaml: "**/*.yaml"
+  - yaml: "**/*.yml"
+  - playbook: "playbooks/*.yml"
+  - tasks: "roles/*/tasks/*.yml"
+  - handlers: "roles/*/handlers/*.yml"
+  - vars: "roles/*/vars/*.yml"
+  - vars: "roles/*/defaults/*.yml"
+  - meta: "roles/*/meta/*.yml"
+
+# Logging
+verbosity: 1
