@@ -79,3 +79,4 @@ ignore: |
   tests/output/
   collections/
   .github/
+  molecule/default/molecule.yml
