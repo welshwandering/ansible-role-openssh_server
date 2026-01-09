@@ -53,30 +53,39 @@ jobs:
           - distro: debian13
             image: geerlingguy/docker-debian13-ansible:latest
             openssh_version: "9.6p1"
+            command: ""
           - distro: debian12
             image: geerlingguy/docker-debian12-ansible:latest
             openssh_version: "9.2p1"
+            command: ""
           - distro: debian11
             image: geerlingguy/docker-debian11-ansible:latest
             openssh_version: "8.4p1"
+            command: ""
           - distro: ubuntu2404
             image: geerlingguy/docker-ubuntu2404-ansible:latest
             openssh_version: "9.6p1"
+            command: ""
           - distro: ubuntu2204
             image: geerlingguy/docker-ubuntu2204-ansible:latest
             openssh_version: "8.9p1"
+            command: ""
           - distro: ubuntu2004
             image: geerlingguy/docker-ubuntu2004-ansible:latest
             openssh_version: "8.2p1"
+            command: ""
           - distro: rocky10
             image: geerlingguy/docker-rockylinux10-ansible:latest
             openssh_version: "9.9"
+            command: "/usr/sbin/init"
           - distro: rocky9
             image: geerlingguy/docker-rockylinux9-ansible:latest
             openssh_version: "8.7p1"
+            command: "/usr/sbin/init"
           - distro: rocky8
             image: geerlingguy/docker-rockylinux8-ansible:latest
             openssh_version: "8.0p1"
+            command: "/usr/sbin/init"
 
     steps:
       - name: Checkout code
@@ -85,18 +94,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install molecule molecule-plugins[docker] ansible-core>=2.15 docker
+        run: pip3 install ansible-core ansible-lint yamllint molecule molecule-plugins[docker] docker
 
       - name: Install Ansible collections
-        run: |
-          ansible-galaxy collection install ansible.posix>=1.5.0
-          ansible-galaxy collection install community.general>=8.0.0
-          ansible-galaxy collection install community.docker>=3.0.0
+        run: ansible-galaxy collection install ansible.posix community.general community.docker
 
       - name: Run Molecule tests
         run: molecule test
@@ -104,3 +108,5 @@ jobs:
           MOLECULE_DISTRO: ${{ matrix.distro }}
           MOLECULE_IMAGE: ${{ matrix.image }}
           MOLECULE_OPENSSH_VERSION: ${{ matrix.openssh_version }}
+          MOLECULE_COMMAND: ${{ matrix.command }}
+```
