@@ -4,7 +4,7 @@
 
 # Network
 Port {{ openssh_port }}
-{% for address in openssh_listen_addresses %}
+{% for address in openssh_listen_addresses | sort %}
 ListenAddress {{ address }}
 {% endfor %}
 
@@ -84,16 +84,16 @@ ClientAliveCountMax {{ openssh_client_alive_count_max }}
 
 # Access control
 {% if openssh_allow_users | length > 0 %}
-AllowUsers {{ openssh_allow_users | join(' ') }}
+AllowUsers {{ openssh_allow_users | sort | join(' ') }}
 {% endif %}
 {% if openssh_deny_users | length > 0 %}
-DenyUsers {{ openssh_deny_users | join(' ') }}
+DenyUsers {{ openssh_deny_users | sort | join(' ') }}
 {% endif %}
 {% if openssh_allow_groups | length > 0 %}
-AllowGroups {{ openssh_allow_groups | join(' ') }}
+AllowGroups {{ openssh_allow_groups | sort | join(' ') }}
 {% endif %}
 {% if openssh_deny_groups | length > 0 %}
-DenyGroups {{ openssh_deny_groups | join(' ') }}
+DenyGroups {{ openssh_deny_groups | sort | join(' ') }}
 {% endif %}
 
 # Banner
