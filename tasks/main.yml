@@ -132,6 +132,18 @@
     - openssh
     - facts
 
+- name: Filter unsupported algorithms for older OpenSSH versions
+  ansible.builtin.set_fact:
+    openssh_host_key_algorithms: "{{ openssh_host_key_algorithms | reject('match', '^sk-') | list }}"
+    openssh_pubkey_accepted_key_types: "{{ openssh_pubkey_accepted_key_types | reject('match', '^sk-') | list }}"
+    openssh_ca_signature_algorithms: "{{ openssh_ca_signature_algorithms | reject('match', '^sk-') | list }}"
+  when:
+    - openssh_version is defined
+    - openssh_version < 8.2
+  tags:
+    - openssh
+    - facts
+
 - name: Display OpenSSH version and capabilities
   ansible.builtin.debug:
     msg:
