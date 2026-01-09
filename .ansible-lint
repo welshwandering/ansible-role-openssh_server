@@ -53,6 +53,7 @@ mock_modules:
 # Mock roles for testing
 mock_roles:
   - community.general
+  - ansible-role-openssh_server
 
 # Kinds of files to lint
 kinds:

@@ -49,6 +49,7 @@
 
     - name: Check sshd_config for hardening
       ansible.builtin.shell: |
+        set -o pipefail
         grep -E '^(PasswordAuthentication|PermitRootLogin|PubkeyAuthentication)' /etc/ssh/sshd_config || true
       changed_when: false
       register: ssh_hardening
